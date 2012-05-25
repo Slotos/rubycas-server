@@ -2,6 +2,7 @@
 config.yml
 *.db
 *.sqlite3
+*.sqlite
 *.swp
 *~
 *.pidaproject
