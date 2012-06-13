@@ -21,15 +21,16 @@ module CASServer
     include CASServer::CAS # CAS protocol helpers
     include Localization
 
-    @oauth_links = ""
-    attr_accessor :oauth_lnks
-
     def self.oauth_links
       @oauth_links ||= ""
     end
 
     def self.add_oauth_link(text)
-      @oauth_links << text
+      begin
+        @oauth_links << text.to_s
+      rescue NoMethodError
+        @oauth_links = text.to_s
+      end
     end
 
     # Use :public_folder for Sinatra >= 1.3, and :public for older versions.
@@ -216,9 +217,7 @@ module CASServer
     def self.init_matchers!
       # to avoid stacking rack middlewares let's first remove omniauth middlewares
       # adding this block to support #reconfigure! that doesn't appear to be called from anywhere (my ignorance of sinatra ways implied)
-      self.class_eval do
-        @middleware.delete_if{|m| m.include? OmniAuth::Builder }
-      end
+      @middleware.delete_if{|m| m.include? OmniAuth::Builder }
 
       return nil unless config[:matcher]
 
