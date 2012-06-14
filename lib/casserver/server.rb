@@ -241,9 +241,13 @@ module CASServer
     def self.init_authenticators!
       auth = []
 
-      if config[:authenticator].nil? && config[:matcher].nil?
-        print_cli_message "No authenticators or matchers have been configured. Please double-check your config file (#{CONFIG_FILE.inspect}).", :error
-        exit 1
+      if config[:authenticator].nil?
+        if config[:matcher].nil?
+          print_cli_message "No authenticators or matchers have been configured. Please double-check your config file (#{CONFIG_FILE.inspect}).", :error
+            exit 1
+        else
+          return
+        end
       end
 
       begin
