@@ -221,9 +221,9 @@ module CASServer
 
       return nil unless config[:matcher]
 
-      config[:matcher].each do |name, _|
-        require "rubycas-#{name}-matcher"
-        register "CASServer::Matchers::#{name.capitalize}".constantize
+      config[:matcher].each do |name, conf|
+        require ( conf[:require] || "rubycas-#{name}-matcher" )
+        register ( conf[:register] || "CASServer::Matchers::#{name.capitalize}".constantize )
       end
 
       set :oauth_links, oauth_links
