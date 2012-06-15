@@ -521,7 +521,7 @@ module CASServer
 
         if credentials_are_valid
           $LOG.info("Credentials for username '#{@username}' successfully validated using #{successful_authenticator.class.name}.")
-          confirm_authentication!(extra_attributes)
+          confirm_authentication!(@username, @service, extra_attributes)
         else
           $LOG.warn("Invalid credentials given for user '#{@username}'")
           @message = {:type => 'mistake', :message => t.error.incorrect_username_or_password}
@@ -785,28 +785,29 @@ module CASServer
 
     private
 
-    def confirm_authentication!(extra_attributes = nil)
+    def confirm_authentication!(username, service = nil, *args)
+      extra_attributes = args.extract_options!
       $LOG.debug("Authenticator provided additional user attributes: #{extra_attributes.inspect}") unless extra_attributes.blank?
 
       # 3.6 (ticket-granting cookie)
-      tgt = generate_ticket_granting_ticket(@username, extra_attributes)
+      tgt = generate_ticket_granting_ticket(username, extra_attributes)
       response.set_cookie('tgt', tgt.to_s)
 
-      $LOG.debug("Ticket granting cookie '#{tgt.inspect}' granted to #{@username.inspect}")
+      $LOG.debug("Ticket granting cookie '#{tgt.inspect}' granted to #{username.inspect}")
 
-      if @service.blank?
-        $LOG.info("Successfully authenticated user '#{@username}' at '#{tgt.client_hostname}'. No service param was given, so we will not redirect.")
+      if service.blank?
+        $LOG.info("Successfully authenticated user '#{username}' at '#{tgt.client_hostname}'. No service param was given, so we will not redirect.")
         @message = {:type => 'confirmation', :message => t.notice.success_logged_in}
       else
-        @st = generate_service_ticket(@service, @username, tgt)
+        @st = generate_service_ticket(service, username, tgt)
 
         begin
-          service_with_ticket = service_uri_with_ticket(@service, @st)
+          service_with_ticket = service_uri_with_ticket(service, @st)
 
-          $LOG.info("Redirecting authenticated user '#{@username}' at '#{@st.client_hostname}' to service '#{@service}'")
+          $LOG.info("Redirecting authenticated user '#{username}' at '#{@st.client_hostname}' to service '#{service}'")
           redirect service_with_ticket, 303 # response code 303 means "See Other" (see Appendix B in CAS Protocol spec)
         rescue URI::InvalidURIError
-          $LOG.error("The service '#{@service}' is not a valid URI!")
+          $LOG.error("The service '#{service}' is not a valid URI!")
           @message = {
             :type => 'mistake',
             :message => t.error.invalid_target_service
