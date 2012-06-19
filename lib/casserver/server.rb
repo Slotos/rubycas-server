@@ -33,6 +33,27 @@ module CASServer
       end
     end
 
+    # get "/oauth/failure", :when_params => {:provider => "facebook"}
+    def self.when_params(*args)
+      desired_params = Hash[args]
+
+      condition {
+        desired_params.delete_if do |k,v|
+          params[k.to_s] == v
+        end
+        desired_params.empty?
+      }
+    end
+
+    # get "/something", with_params => "renew"
+    # get "/something", with_params => ["renew", "fluttershy]
+    def self.with_params(*args)
+      args = [args] unless args.kind_of?(::Array)
+      condition {
+        (args.map(&:to_s) - params.keys.map(&:to_s)).empty?
+      }
+    end
+
     # Use :public_folder for Sinatra >= 1.3, and :public for older versions.
     def self.use_public_folder?
       Sinatra.const_defined?("VERSION") && Gem::Version.new(Sinatra::VERSION) >= Gem::Version.new("1.3.0")
@@ -215,12 +236,15 @@ module CASServer
       set :oauth_links, oauth_links
 
       get "#{uri_path}/auth/failure" do
-        redirect_params = []
-        redirect_params << "service=#{CGI.escape session[:service]}" if session[:service]
-        redirect_params << "renew=#{session[:renew]}" if session[:renew]
-        redirect_params << "oauth_error=#{params[:message]}" if params[:message]
-        redirect_params << "oauth_strategy=#{params[:strategy]}" if params[:strategy] 
-        redirect to("#{settings.uri_path}/login?#{redirect_params.join("&")}"), 303
+        redirector = Addressable::URI.new
+        redirector.query_values = {
+          :service => session[:service],
+          :renew => session[:renew],
+          :oauth_error => params[:message],
+          :oauth_strategy => params[:strategy]
+        }.delete_if{|_,v| v.nil? || v.empty?}
+        redirector.path = "#{settings.uri_path}/login"
+        redirect to(redirector.to_s), 303
       end
     end
 
