@@ -159,16 +159,6 @@ module CASServer
       set :config, config
     end
 
-    def self.reconfigure!(config)
-      config.each do |key, val|
-        self.config[key] = val
-      end
-      init_database!
-      init_logger!
-      init_authenticators!
-      init_matchers!
-    end
-
     def self.handler_options
       handler_options = {
         :Host => bind || config[:bind_address],
@@ -215,10 +205,6 @@ module CASServer
     end
 
     def self.init_matchers!
-      # to avoid stacking rack middlewares let's first remove omniauth middlewares
-      # adding this block to support #reconfigure! that doesn't appear to be called from anywhere (my ignorance of sinatra ways implied)
-      @middleware.delete_if{|m| m.include? OmniAuth::Builder }
-
       return nil unless config[:matcher]
 
       config[:matcher].each do |name, conf|
@@ -782,8 +768,6 @@ module CASServer
       raise unless @custom_views
       super engine, data, options, views
     end
-
-    private
 
     def confirm_authentication!(username, service = nil, *args)
       extra_attributes = args.extract_options!
