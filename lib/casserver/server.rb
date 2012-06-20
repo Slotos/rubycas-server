@@ -226,33 +226,23 @@ module CASServer
     end
 
     def self.init_matchers!
-      return nil unless config[:matcher]
+      return nil unless config[:strategy]
 
-      config[:matcher].each do |name, conf|
-        require ( conf[:require] || "rubycas-#{name}-matcher" )
-        register ( conf[:register] || "CASServer::Matchers::#{name.capitalize}".constantize )
+      config[:strategy].each do |name, conf|
+        set :workhorse, conf
+        require ( conf[:require] || "rubycas-strategy-#{name}" )
+        register ( conf[:register] || "CASServer::Strategy::#{name.capitalize}".constantize )
+        set :workhorse, nil
       end
 
       set :oauth_links, oauth_links
-
-      get "#{uri_path}/auth/failure" do
-        redirector = Addressable::URI.new
-        redirector.query_values = {
-          :service => session[:service],
-          :renew => session[:renew],
-          :oauth_error => params[:message],
-          :oauth_strategy => params[:strategy]
-        }.delete_if{|_,v| v.nil? || v.empty?}
-        redirector.path = "#{settings.uri_path}/login"
-        redirect to(redirector.to_s), 303
-      end
     end
 
     def self.init_authenticators!
       auth = []
 
       if config[:authenticator].nil?
-        if config[:matcher].nil?
+        if config[:strategy].nil?
           print_cli_message "No authenticators or matchers have been configured. Please double-check your config file (#{CONFIG_FILE.inspect}).", :error
             exit 1
         else
@@ -799,7 +789,10 @@ module CASServer
 
       # 3.6 (ticket-granting cookie)
       tgt = generate_ticket_granting_ticket(username, extra_attributes)
-      response.set_cookie('tgt', tgt.to_s)
+      response.set_cookie('tgt',
+                          :value => tgt.to_s,
+                          :path => "/#{settings.uri_path}"
+                         )
 
       $LOG.debug("Ticket granting cookie '#{tgt.inspect}' granted to #{username.inspect}")
 
