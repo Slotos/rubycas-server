@@ -365,8 +365,6 @@ module CASServer
 
     # 2.1.1
     get "#{uri_path}/login" do
-      require 'pry'
-      binding.pry
       CASServer::Utils::log_controller_action(self.class, params)
 
       # make sure there's no caching
@@ -813,8 +811,6 @@ module CASServer
         @st = generate_service_ticket(service, username, tgt)
 
         begin
-          require 'pry'
-          binding.pry
           service_with_ticket = service_uri_with_ticket(service, @st)
 
           $LOG.info("Redirecting authenticated user '#{username}' at '#{@st.client_hostname}' to service '#{service}'")
