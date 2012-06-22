@@ -153,18 +153,4 @@ describe 'CASServer' do
       page.body.should match("<test_utf_string>&#1070;&#1090;&#1092;</test_utf_string>")
     end
   end
-
-  describe "matchers" do
-    describe "oauth_links writer/accessor" do
-      it "should be empty initially" do
-        CASServer::Server.oauth_links.should eq("")
-      end
-
-      it "should provide push accessor to push string into it" do
-        string = "TEST STRING PLEASE IGNORE"
-        CASServer::Server.add_oauth_link string
-        CASServer::Server.oauth_links.should =~ Regexp.new("#{string}$")
-      end
-    end
-  end
 end
