@@ -225,13 +225,21 @@ module CASServer
       end
     end
 
-    def self.init_matchers!
+    def self.init_strategies!
       return nil unless config[:strategy]
 
       config[:strategy].each do |name, conf|
         set :workhorse, conf
-        require ( conf[:require] || "rubycas-strategy-#{name}" )
-        register ( conf[:register] || "CASServer::Strategy::#{name.capitalize}".constantize )
+
+        begin
+          require ( conf[:require] || "rubycas-strategy-#{name}" )
+        rescue LoadError => e
+          $LOG.warning "Failed require with error #{e}, attempting to load #{name} strategy anyway"
+        end
+
+        strategy = ( conf[:register] || "CASServer::Strategy::#{name.capitalize}" ).constantize
+        register strategy
+
         set :workhorse, nil
       end
 
@@ -333,7 +341,7 @@ module CASServer
       init_logger!
       init_database!
       init_authenticators!
-      init_matchers!
+      init_strategies!
     end
 
     before do
