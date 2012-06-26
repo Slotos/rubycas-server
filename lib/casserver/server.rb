@@ -529,7 +529,7 @@ module CASServer
 
         if credentials_are_valid
           $LOG.info("Credentials for username '#{@username}' successfully validated using #{successful_authenticator.class.name}.")
-          confirm_authentication!(@username, @service, extra_attributes)
+          establish_session!(@username, @service, extra_attributes)
         else
           $LOG.warn("Invalid credentials given for user '#{@username}'")
           @message = {:type => 'mistake', :message => t.error.incorrect_username_or_password}
@@ -791,7 +791,7 @@ module CASServer
       super engine, data, options, views
     end
 
-    def confirm_authentication!(username, service = nil, *args)
+    def establish_session!(username, service = nil, *args)
       extra_attributes = args.extract_options!
       $LOG.debug("Authenticator provided additional user attributes: #{extra_attributes.inspect}") unless extra_attributes.blank?
 

@@ -26,7 +26,7 @@ describe 'CASServer strategies' do
     end
   end
 
-  describe "confirm_authentication" do
+  describe "establish_session" do
     it "should set tgc" do
       @browser.get '/confirm_authentication'
       @browser.instance_variable_get(:@rack_mock_session).cookie_jar["tgt"].should =~ /^TGC-[0-9rA-Z]+$/
@@ -39,7 +39,7 @@ describe 'CASServer strategies' do
     end
 
     it "should not redirect to service if service is not a valid URI" do
-      service = "Hey, I'm not an URI, seriously!"
+      service = CGI.escape("Hey, I'm not an URI, seriously!")
       @browser.get "/confirm_authentication?service=#{service}"
       @browser.last_response.should_not be_redirect
     end

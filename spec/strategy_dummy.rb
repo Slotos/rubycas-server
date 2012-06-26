@@ -4,7 +4,7 @@ module CASServer
       def self.registered(app)
 
         app.get '/confirm_authentication' do
-          confirm_authentication!("someone", params[:service])
+          establish_session!("someone", params[:service])
         end
 
       end
