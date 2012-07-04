@@ -23,9 +23,8 @@ authenticator:
   class: CASServer::Authenticators::Test
   password: spec_password
 
-strategy:
-  dummy:
-    require: <%= "#{Dir.pwd}/spec/strategy_dummy" %>
+strategies:
+  strategy: Dummy
 
 theme: simple
 

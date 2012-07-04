@@ -67,7 +67,7 @@ module CASServer
       :maximum_unused_login_ticket_lifetime => 5.minutes,
       :maximum_unused_service_ticket_lifetime => 5.minutes, # CAS Protocol Spec, sec. 3.2.1 (recommended expiry time)
       :maximum_session_lifetime => 2.days, # all tickets are deleted after this period of time
-      :log => {:file => 'casserver.log', :level => 'DEBUG'},
+      :log => {:file => 'log/casserver.log', :level => 'DEBUG'},
       :uri_path => ""
     )
     set :config, config
@@ -226,19 +226,20 @@ module CASServer
     end
 
     def self.init_strategies!
-      return nil unless config[:strategy]
+      strategies = config[:strategies] || config[:strategy]
+      return unless strategies
+      strategies = [strategies] unless strategies.is_a?(::Array)
 
-      config[:strategy].each do |name, conf|
+      strategies.each do |conf|
         set :workhorse, conf
 
         begin
-          require ( conf[:require] || "rubycas-strategy-#{name}" )
+          require "rubycas-strategy-#{conf[:strategy].downcase}"
         rescue LoadError => e
-          $LOG.debug "Failed require with error #{e}, attempting to load #{name} strategy anyway"
+          $LOG.debug "Failed require with error #{e}, attempting to load #{conf[:strategy]} strategy anyway"
         end
 
-        strategy = ( conf[:register] || "CASServer::Strategy::#{name.capitalize}" ).constantize
-        register strategy
+        register "CASServer::Strategy::#{conf[:strategy]}".constantize
 
         set :workhorse, nil
       end

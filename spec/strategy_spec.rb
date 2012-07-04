@@ -1,5 +1,7 @@
 # encoding: UTF-8
 require File.dirname(__FILE__) + '/spec_helper'
+require File.dirname(__FILE__) + '/strategy_dummy'
+
 include Rack::Test::Methods
 
 $LOG = Logger.new(File.basename(__FILE__).gsub('.rb','.log'))
