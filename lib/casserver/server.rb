@@ -21,15 +21,15 @@ module CASServer
     include CASServer::CAS # CAS protocol helpers
     include Localization
 
-    def self.oauth_links
-      @oauth_links ||= ""
+    def self.login_links
+      @login_links ||= []
     end
 
-    def self.add_oauth_link(text)
+    def self.add_login_link(text)
       begin
-        @oauth_links << text.to_s
+        @login_links << text
       rescue NoMethodError
-        @oauth_links = text.to_s
+        @login_links = [text]
       end
     end
 
@@ -244,7 +244,7 @@ module CASServer
         set :workhorse, nil
       end
 
-      set :oauth_links, oauth_links
+      set :login_links, login_links
     end
 
     def self.init_authenticators!
@@ -398,6 +398,7 @@ module CASServer
           :message => t.error.unable_to_authenticate}
       end
 
+      # TODO: Move strategy specific messages into strategy gems and implement persistent message store
       if params[:oauth_error]
         @message = {:type => 'mistake',
           :message => "#{params[:oauth_strategy].to_s.capitalize} #{t.error.oauth_failure} #{params[:oauth_error]}" }

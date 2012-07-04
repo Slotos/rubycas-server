@@ -16,15 +16,15 @@ describe 'CASServer strategies' do
     @browser = Rack::Test::Session.new( Rack::MockSession.new( app ) )
   end
 
-  describe "oauth_links writer/accessor" do
+  describe "login_links writer/accessor" do
     it "should be empty initially" do
-      CASServer::Server.oauth_links.should eq("")
+      CASServer::Server.login_links.should eq([])
     end
 
     it "should provide push accessor to push string into it" do
       string = "TEST STRING PLEASE IGNORE"
-      CASServer::Server.add_oauth_link string
-      CASServer::Server.oauth_links.should =~ Regexp.new("#{string}$")
+      CASServer::Server.add_login_link string
+      CASServer::Server.login_links.should include(string)
     end
   end
 

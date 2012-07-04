@@ -27,7 +27,9 @@
       <%= erb(:_login_form, :layout => false) %>
     </td>
     <td id="login-links-container">
-      <%= erb settings.oauth_links %>
+      <% settings.login_links.each do |link| %>
+        <%= erb link %>
+      <% end %>
     </td>
   </tr>
 </table>
