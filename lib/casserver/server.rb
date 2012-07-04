@@ -379,7 +379,6 @@ module CASServer
       @gateway = params['gateway'] == 'true' || params['gateway'] == '1'
 
       session[:service] = @service
-      session[:renew] = @renew
 
       if tgc = request.cookies['tgt']
         tgt, tgt_error = validate_ticket_granting_ticket(tgc)
