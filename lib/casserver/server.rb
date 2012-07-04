@@ -566,37 +566,9 @@ module CASServer
 
       @gateway = params['gateway'] == 'true' || params['gateway'] == '1'
 
-      tgt = CASServer::Model::TicketGrantingTicket.find_by_ticket(request.cookies['tgt'])
+      do_logout!(request.cookies['tgt'])
 
       response.delete_cookie 'tgt'
-
-      if tgt
-        CASServer::Model::TicketGrantingTicket.transaction do
-          $LOG.debug("Deleting Service/Proxy Tickets for '#{tgt}' for user '#{tgt.username}'")
-          tgt.granted_service_tickets.each do |st|
-            send_logout_notification_for_service_ticket(st) if config[:enable_single_sign_out]
-            # TODO: Maybe we should do some special handling if send_logout_notification_for_service_ticket fails?
-            #       (the above method returns false if the POST results in a non-200 HTTP response).
-            $LOG.debug "Deleting #{st.class.name.demodulize} #{st.ticket.inspect} for service #{st.service}."
-            st.destroy
-          end
-
-          pgts = CASServer::Model::ProxyGrantingTicket.find(:all,
-            :conditions => [CASServer::Model::Base.connection.quote_table_name(CASServer::Model::ServiceTicket.table_name)+".username = ?", tgt.username],
-            :include => :service_ticket)
-          pgts.each do |pgt|
-            $LOG.debug("Deleting Proxy-Granting Ticket '#{pgt}' for user '#{pgt.service_ticket.username}'")
-            pgt.destroy
-          end
-
-          $LOG.debug("Deleting #{tgt.class.name.demodulize} '#{tgt}' for user '#{tgt.username}'")
-          tgt.destroy
-        end
-
-        $LOG.info("User '#{tgt.username}' logged out.")
-      else
-        $LOG.warn("User tried to log out without a valid ticket-granting ticket.")
-      end
 
       @message = {:type => 'confirmation', :message => t.notice.success_logged_out}
 
@@ -804,6 +776,10 @@ module CASServer
 
       $LOG.debug("Ticket granting cookie '#{tgt.inspect}' granted to #{username.inspect}")
 
+      # Establishing new identity, log out previous one, notifying services if single_sign_out is enabled
+      $LOG.debug("Initiating log out for overriden session '#{request.cookies['tgt'].inspect}'")
+      do_logout!(request.cookies['tgt'])
+
       if service.blank?
         $LOG.info("Successfully authenticated user '#{username}' at '#{tgt.client_hostname}'. No service param was given, so we will not redirect.")
         @message = {:type => 'confirmation', :message => t.notice.success_logged_in}
@@ -822,6 +798,38 @@ module CASServer
             :message => t.error.invalid_target_service
           }
         end
+      end
+    end
+
+    def do_logout!(ticket)
+      tgt = CASServer::Model::TicketGrantingTicket.find_by_ticket(ticket)
+
+      if tgt
+        CASServer::Model::TicketGrantingTicket.transaction do
+          $LOG.debug("Deleting Service/Proxy Tickets for '#{tgt}' for user '#{tgt.username}'")
+          tgt.granted_service_tickets.each do |st|
+            send_logout_notification_for_service_ticket(st) if config[:enable_single_sign_out]
+            # TODO: Maybe we should do some special handling if send_logout_notification_for_service_ticket fails?
+            #       (the above method returns false if the POST results in a non-200 HTTP response).
+            $LOG.debug "Deleting #{st.class.name.demodulize} #{st.ticket.inspect} for service #{st.service}."
+            st.destroy
+          end
+
+          pgts = CASServer::Model::ProxyGrantingTicket.find(:all,
+            :conditions => [CASServer::Model::Base.connection.quote_table_name(CASServer::Model::ServiceTicket.table_name)+".username = ?", tgt.username],
+            :include => :service_ticket)
+          pgts.each do |pgt|
+            $LOG.debug("Deleting Proxy-Granting Ticket '#{pgt}' for user '#{pgt.service_ticket.username}'")
+            pgt.destroy
+          end
+
+          $LOG.debug("Deleting #{tgt.class.name.demodulize} '#{tgt}' for user '#{tgt.username}'")
+          tgt.destroy
+        end
+
+        $LOG.info("User '#{tgt.username}' logged out.")
+      else
+        $LOG.warn("User tried to log out without a valid ticket-granting ticket.")
       end
     end
   end
