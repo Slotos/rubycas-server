@@ -5,8 +5,7 @@ module CASServer
     def self.included(mod)
       mod.module_eval do
         register Sinatra::R18n
-        set :default_locale, 'en'
-        set :translations, File.dirname(__FILE__) + "/../../locales"
+        ::R18n.default_places { File.dirname( File.dirname self.root ) + "/locales" }
       end
     end
   end
